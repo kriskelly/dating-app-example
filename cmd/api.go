@@ -4,9 +4,11 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/playground"
+	"github.com/alexedwards/scs/v2"
 	"github.com/kriskelly/dating-app-example/internal/graph"
 	"github.com/kriskelly/dating-app-example/internal/graph/generated"
 )
@@ -19,12 +21,16 @@ func main() {
 		port = defaultPort
 	}
 
-	resolver := graph.NewResolver()
+	sessionManager := scs.New()
+	sessionManager.Lifetime = 24 * time.Hour
+
+	resolver := graph.NewResolver(sessionManager)
 	srv := handler.NewDefaultServer(generated.NewExecutableSchema(generated.Config{Resolvers: resolver}))
 
-	http.Handle("/", playground.Handler("GraphQL playground", "/query"))
-	http.Handle("/query", srv)
+	mux := http.NewServeMux()
+	mux.HandleFunc("/", playground.Handler("GraphQL playground", "/query"))
+	mux.Handle("/query", srv)
 
 	log.Printf("connect to http://localhost:%s/ for GraphQL playground", port)
-	log.Fatal(http.ListenAndServe(":"+port, nil))
+	log.Fatal(http.ListenAndServe(":"+port, sessionManager.LoadAndSave(mux)))
 }

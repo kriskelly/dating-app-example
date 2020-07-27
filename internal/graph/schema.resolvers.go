@@ -20,7 +20,7 @@ func (r *mutationResolver) Login(ctx context.Context, email string, password str
 	if user.Password != password {
 		return nil, errors.New("Invalid password")
 	}
-	r.currentUser = user
+	r.sessionManager.Put(ctx, "userID", email)
 	return user, nil
 }
 
@@ -37,7 +37,8 @@ func (r *mutationResolver) Signup(ctx context.Context, input model.NewUser) (*mo
 }
 
 func (r *queryResolver) Me(ctx context.Context) (*model.User, error) {
-	user := r.currentUser
+	userID := r.sessionManager.Get(ctx, "userID").(string)
+	user := r.users[userID]
 	if user == nil {
 		return nil, errors.New("No current user")
 	}

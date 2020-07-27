@@ -1,18 +1,22 @@
 package graph
 
-import "github.com/kriskelly/dating-app-example/internal/model"
+import (
+	"github.com/alexedwards/scs/v2"
+	"github.com/kriskelly/dating-app-example/internal/model"
+)
 
 // This file will not be regenerated automatically.
 //
 // It serves as dependency injection for your app, add any dependencies you require here.
 
 type Resolver struct {
-	users       map[string]*model.User
-	currentUser *model.User
+	users          map[string]*model.User
+	sessionManager *scs.SessionManager
 }
 
-func NewResolver() *Resolver {
+func NewResolver(sessionManager *scs.SessionManager) *Resolver {
 	return &Resolver{
-		users: make(map[string]*model.User),
+		users:          make(map[string]*model.User),
+		sessionManager: sessionManager,
 	}
 }
