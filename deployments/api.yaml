@@ -19,3 +19,4 @@ spec:
           command: ["/app/build/api"]
           ports:
             - containerPort: 3000
+            - containerPort: 40000
