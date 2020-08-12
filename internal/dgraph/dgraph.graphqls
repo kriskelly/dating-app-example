@@ -10,9 +10,10 @@ type User {
     name
     email
     password
-    matched: [User!]
-    liked: [User!]
-    lives_in: City!
+    matched
+    liked
+    rejected
+    lives_in
 }
 
 type City {
