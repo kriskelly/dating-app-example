@@ -2,6 +2,11 @@
 
 package model
 
+type LikedResponse struct {
+	Success bool `json:"success"`
+	Matched bool `json:"matched"`
+}
+
 type NewUser struct {
 	Name     string `json:"name"`
 	Email    string `json:"email"`

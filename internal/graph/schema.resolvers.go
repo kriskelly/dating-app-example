@@ -5,22 +5,25 @@ package graph
 
 import (
 	"context"
-	"errors"
 
-	"github.com/google/uuid"
 	"github.com/kriskelly/dating-app-example/internal/graph/generated"
 	"github.com/kriskelly/dating-app-example/internal/model"
 )
 
 func (r *mutationResolver) Login(ctx context.Context, email string, password string) (*model.User, error) {
-	user := r.users[email]
-	if user == nil {
-		return nil, errors.New("Invalid email")
+	uid, err := model.LoginUser(ctx, r.dgraphClient, email, password)
+	if err != nil {
+		return nil, err
 	}
-	if user.Password != password {
-		return nil, errors.New("Invalid password")
+	r.sessionManager.Put(ctx, "userID", uid)
+	fields := getFieldStr(ctx)
+	options := &model.FindUserOptions{
+		Fields: fields,
 	}
-	r.sessionManager.Put(ctx, "userID", email)
+	user, err := model.FindUser(ctx, r.dgraphClient, *uid, options)
+	if err != nil {
+		return nil, err
+	}
 	return user, nil
 }
 
@@ -30,19 +33,39 @@ func (r *mutationResolver) Signup(ctx context.Context, input model.NewUser) (*mo
 		Email:    input.Email,
 		Password: input.Password,
 	}
-	id := uuid.New().String()
-	newUser.ID = id
-	r.users[newUser.Email] = newUser
+	err := model.CreateUser(ctx, r.dgraphClient, newUser)
+	if err != nil {
+		return nil, err
+	}
 	return newUser, nil
 }
 
-func (r *queryResolver) Me(ctx context.Context) (*model.User, error) {
-	userID := r.sessionManager.Get(ctx, "userID").(string)
-	user := r.users[userID]
-	if user == nil {
-		return nil, errors.New("No current user")
+func (r *mutationResolver) LikeUser(ctx context.Context, userID string) (*model.LikedResponse, error) {
+	currentUser, err := r.getCurrentUser(ctx, nil)
+	if err != nil {
+		return nil, err
 	}
-	return user, nil
+
+	return model.LikeUser(ctx, r.dgraphClient, currentUser, userID)
+}
+
+func (r *queryResolver) Me(ctx context.Context) (*model.User, error) {
+	fields := getFieldStr(ctx)
+	options := &model.FindUserOptions{Fields: fields}
+	return r.getCurrentUser(ctx, options)
+}
+
+func (r *queryResolver) Matches(ctx context.Context) ([]*model.User, error) {
+	fields := getFieldStr(ctx)
+	options := &model.FindUserOptions{
+		Fields: fields,
+	}
+	// Fetch current user with default values
+	currentUser, err := r.getCurrentUser(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+	return model.FindMatches(ctx, r.dgraphClient, currentUser, options)
 }
 
 // Mutation returns generated.MutationResolver implementation.

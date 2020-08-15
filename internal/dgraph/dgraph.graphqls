@@ -1,3 +1,4 @@
+id: string @index(exact) .
 name: string @index(exact, fulltext) @count .
 email: string @index(exact) .
 password: password .
@@ -7,6 +8,7 @@ matched: [uid] @count @reverse .
 lives_in: uid @reverse .
 
 type User {
+    id
     name
     email
     password

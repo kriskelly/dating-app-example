@@ -9,6 +9,7 @@ import (
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/playground"
 	"github.com/alexedwards/scs/v2"
+	"github.com/kriskelly/dating-app-example/internal/dgraph"
 	"github.com/kriskelly/dating-app-example/internal/graph"
 	"github.com/kriskelly/dating-app-example/internal/graph/generated"
 )
@@ -24,7 +25,11 @@ func main() {
 	sessionManager := scs.New()
 	sessionManager.Lifetime = 24 * time.Hour
 
-	resolver := graph.NewResolver(sessionManager)
+	dgraphClient := dgraph.NewClient()
+	dgraphClient.Connect()
+	defer dgraphClient.Close()
+
+	resolver := graph.NewResolver(sessionManager, dgraphClient)
 	srv := handler.NewDefaultServer(generated.NewExecutableSchema(generated.Config{Resolvers: resolver}))
 
 	mux := http.NewServeMux()
